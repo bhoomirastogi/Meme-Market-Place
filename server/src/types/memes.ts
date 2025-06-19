@@ -14,11 +14,11 @@ export const memeSchema = z.object({
 });
 
 export const voteSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().uuid().optional(),
   meme_id: z.string().uuid(),
   user_id: z.string().uuid(),
   type: z.enum(["up", "down"]),
-  created_at: z.string().datetime(),
+  created_at: z.string().datetime().optional(),
 });
 
 export const bidSchema = z.object({

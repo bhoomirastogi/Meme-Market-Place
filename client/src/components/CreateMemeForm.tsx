@@ -1,0 +1,160 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { memeSchema } from "../types/memes";
+import { z } from "zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { useState } from "react";
+
+type MemeFormData = z.infer<typeof memeSchema>;
+
+export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
+  const queryClient = useQueryClient();
+  const [tagInput, setTagInput] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    getValues,
+    formState: { errors },
+  } = useForm<z.infer<typeof memeSchema>>({
+    resolver: zodResolver(memeSchema),
+    defaultValues: {
+      ai_caption: "",
+      ai_vibe: "",
+      downvotes: 0,
+      owner_id: "",
+      title: "",
+      upvotes: 0,
+      tags: [],
+      image_url: "https://picsum.photos/200",
+    },
+  });
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: MemeFormData) => {
+      return axios.post("http://localhost:3000/api/v1/meme", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["memes"] });
+      onClose();
+    },
+  });
+
+  const addTag = () => {
+    const currentTags = getValues("tags");
+    if (tagInput.trim() && !currentTags.includes(tagInput)) {
+      setValue("tags", [...currentTags, tagInput]);
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setValue(
+      "tags",
+      getValues("tags").filter((t) => t !== tag)
+    );
+  };
+
+  const onSubmit = (data: MemeFormData) => {
+    mutate(data);
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit(() => onSubmit)}
+      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4">
+      <h2 className="text-pink-400 font-bold text-2xl mb-2">Create Meme</h2>
+
+      <input
+        {...register("title")}
+        placeholder="Meme Title"
+        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
+      />
+      {errors.title && (
+        <p className="text-red-400 text-sm">{errors.title.message}</p>
+      )}
+
+      <input
+        {...register("image_url")}
+        placeholder="Image URL"
+        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
+      />
+      {errors.image_url && (
+        <p className="text-red-400 text-sm">{errors.image_url.message}</p>
+      )}
+
+      <input
+        {...register("owner_id")}
+        placeholder="Owner UUID"
+        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
+      />
+      {errors.owner_id && (
+        <p className="text-red-400 text-sm">{errors.owner_id.message}</p>
+      )}
+
+      <input
+        type="text"
+        placeholder="AI Caption"
+        {...register("ai_caption")}
+        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
+      />
+      {errors.ai_caption && (
+        <p className="text-red-400 text-sm">{errors.ai_caption.message}</p>
+      )}
+
+      <input
+        type="text"
+        placeholder="AI Vibe (optional)"
+        {...register("ai_vibe")}
+        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
+      />
+
+      {/* Tag Input */}
+      <div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Add Tag"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            className="flex-grow px-4 py-2 bg-black border border-pink-500 text-white rounded"
+          />
+          <button
+            type="button"
+            onClick={addTag}
+            className="bg-pink-600 px-4 py-2 rounded text-white">
+            Add
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-2">
+          {getValues("tags").map((tag) => (
+            <span
+              key={tag}
+              className="px-2 py-1 text-sm bg-pink-500 text-black rounded cursor-pointer"
+              onClick={() => removeTag(tag)}>
+              {tag} ✕
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-between mt-4">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded">
+          {isPending ? "Creating..." : "Create Meme"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-gray-400 hover:text-white">
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+};

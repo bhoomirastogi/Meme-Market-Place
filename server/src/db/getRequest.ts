@@ -18,7 +18,7 @@ export const getMemeQuery = async (
   }
 };
 
-export const getMemeByID = async (id: string) => {
+export const getMemeVoteByID = async (id: string) => {
   try {
     const meme = await supabase
       .from("memes")
@@ -29,6 +29,20 @@ export const getMemeByID = async (id: string) => {
     if (!meme) return { status: false, message: "No Meme Found" };
 
     return { status: true, message: meme.data };
+  } catch (error) {
+    return {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+export const getMemeByID = async (id: string) => {
+  try {
+    const meme = await supabase.from("memes").select("*").eq("id", id).single();
+
+    if (!meme) return { status: false, message: "No Meme Found" };
+
+    return { status: true, message: meme.data?.upvotes };
   } catch (error) {
     return {
       status: false,

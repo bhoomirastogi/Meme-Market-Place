@@ -4,7 +4,7 @@ import type { Meme } from "../types";
 
 export const insertMeme = async ({ meme }: { meme: Meme }) => {
   try {
-    await supabase
+    const { data } = await supabase
       .from("memes")
       .insert({
         title: meme.title,
@@ -18,7 +18,7 @@ export const insertMeme = async ({ meme }: { meme: Meme }) => {
       })
       .select()
       .single();
-    return { status: true, message: "Create Successfully" };
+    return { status: true, message: data };
   } catch (error) {
     return {
       status: false,

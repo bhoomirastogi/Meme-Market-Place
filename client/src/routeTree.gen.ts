@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MemeIndexRouteImport } from './routes/meme/index'
+import { Route as MemeMemeIdRouteImport } from './routes/meme/$memeId'
 
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
@@ -22,31 +24,49 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemeIndexRoute = MemeIndexRouteImport.update({
+  id: '/meme/',
+  path: '/meme/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemeMemeIdRoute = MemeMemeIdRouteImport.update({
+  id: '/meme/$memeId',
+  path: '/meme/$memeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/meme/$memeId': typeof MemeMemeIdRoute
+  '/meme': typeof MemeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/meme/$memeId': typeof MemeMemeIdRoute
+  '/meme': typeof MemeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/meme/$memeId': typeof MemeMemeIdRoute
+  '/meme/': typeof MemeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about'
+  fullPaths: '/' | '/about' | '/meme/$memeId' | '/meme'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about'
-  id: '__root__' | '/' | '/about'
+  to: '/' | '/about' | '/meme/$memeId' | '/meme'
+  id: '__root__' | '/' | '/about' | '/meme/$memeId' | '/meme/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  MemeMemeIdRoute: typeof MemeMemeIdRoute
+  MemeIndexRoute: typeof MemeIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +85,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/meme/': {
+      id: '/meme/'
+      path: '/meme'
+      fullPath: '/meme'
+      preLoaderRoute: typeof MemeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meme/$memeId': {
+      id: '/meme/$memeId'
+      path: '/meme/$memeId'
+      fullPath: '/meme/$memeId'
+      preLoaderRoute: typeof MemeMemeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  MemeMemeIdRoute: MemeMemeIdRoute,
+  MemeIndexRoute: MemeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
