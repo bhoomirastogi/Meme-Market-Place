@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { getMeme } from "../controllers/meme";
-import { logger } from "../middleware/logger";
+import { getMeme, postMeme } from "../controllers/meme";
 
 export const memeRouter = Router();
 
 memeRouter.route("/meme").get(getMeme);
+memeRouter.route("/meme").post(postMeme);

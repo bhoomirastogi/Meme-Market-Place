@@ -1,4 +1,7 @@
 import { env } from "../env/envSchema";
 import { createClient } from "@supabase/supabase-js";
-
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_KEY);
+import { Database } from "../types/database.types";
+export const supabase = createClient<Database>(
+  env.SUPABASE_URL,
+  env.SUPABASE_KEY
+);

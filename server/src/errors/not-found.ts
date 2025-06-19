@@ -8,3 +8,5 @@ class NotFoundError extends CustomApiError {
     this.statusCodes = StatusCodes.NOT_FOUND;
   }
 }
+
+export default NotFoundError;
