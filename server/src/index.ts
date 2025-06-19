@@ -1,11 +1,26 @@
-import express, { Request, Response } from "express";
-import router from "./routes/memes";
+import express from "express";
 
+import { memeRouter } from "./routes/memes";
+import { logger } from "./middleware/logger";
+import { StatusCodes } from "http-status-codes";
+import { corsConfig } from "./corsConfig";
+import { env } from "./env/envSchema";
+import { errorHandlerMiddleware } from "./middleware/errorHandler";
 const app = express();
-const PORT = 8080;
+const PORT = env.PORT;
+app.use(corsConfig);
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-app.use("/memes", router);
-
+// app.use(logger);
+app.use("/api/v1/", logger, memeRouter);
+app.use(errorHandlerMiddleware);
+app.get("/", (req, res) => {
+  console.log("Heelo");
+  res.status(StatusCodes.OK).json({
+    root: "Helel",
+  });
+});
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on ${env.SERVER_URL}:${PORT}`);
 });
