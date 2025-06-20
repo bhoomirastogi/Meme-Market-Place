@@ -9,6 +9,7 @@ import { env } from "./env/envSchema";
 import { errorHandlerMiddleware } from "./middleware/errorHandler";
 import { supabase } from "./supabase";
 import { voteRouter } from "./routes/votes";
+import { bidsRouter } from "./routes/bids";
 
 const app = express();
 const PORT = env.PORT;
@@ -33,11 +34,6 @@ io.on("connection", (socket) => {
     });
 
     // Update meme vote count
-    const voteField = type === "up" ? "upvotes" : "downvotes";
-    await supabase.rpc("increment_vote" as unknown as string, {
-      meme_id,
-      column_name: voteField,
-    });
 
     // Fetch updated meme
     const { data: updatedMeme } = await supabase
@@ -57,6 +53,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use("/api/v1/", logger, memeRouter);
 app.use("/api/", logger, voteRouter);
+app.use("/api/", logger, bidsRouter);
 app.use(errorHandlerMiddleware);
 
 app.get("/", (req, res) => {

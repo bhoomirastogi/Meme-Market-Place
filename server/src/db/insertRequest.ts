@@ -1,5 +1,4 @@
 import { supabase } from "../supabase";
-import { MemeTag } from "../types";
 import type { Meme } from "../types";
 
 export const insertMeme = async ({ meme }: { meme: Meme }) => {
@@ -12,7 +11,7 @@ export const insertMeme = async ({ meme }: { meme: Meme }) => {
         upvotes: meme.upvotes,
         owner_id: meme.owner_id,
         tags: meme.tags,
-        downvotes: meme.downvotes,
+
         ai_caption: meme.ai_caption,
         ai_vibe: meme.ai_vibe,
       })

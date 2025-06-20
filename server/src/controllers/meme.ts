@@ -30,7 +30,7 @@ export const getMemeID = async (req: Request, res: Response) => {
 export const postMeme = async (req: Request, res: Response) => {
   // Validate request body using Zod schema
   const result = memeSchema.safeParse(req.body);
-  console.log("Result", result);
+
   if (!result.success) {
     console.log("DATA mising");
     throw new BadRequestError("Bad Request");

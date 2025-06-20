@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { memeSchema } from "../types/memes";
 import { z } from "zod";
@@ -23,7 +23,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     defaultValues: {
       ai_caption: "",
       ai_vibe: "",
-      downvotes: 0,
+
       owner_id: "",
       title: "",
       upvotes: 0,
@@ -57,14 +57,16 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     );
   };
 
-  const onSubmit = (data: MemeFormData) => {
+  const onSubmit: SubmitHandler<MemeFormData> = (data) => {
+    console.log(data);
     mutate(data);
   };
 
   return (
     <form
-      onSubmit={handleSubmit(() => onSubmit)}
-      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4">
+      onSubmit={handleSubmit(onSubmit)}
+      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4"
+    >
       <h2 className="text-pink-400 font-bold text-2xl mb-2">Create Meme</h2>
 
       <input
@@ -124,7 +126,8 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
           <button
             type="button"
             onClick={addTag}
-            className="bg-pink-600 px-4 py-2 rounded text-white">
+            className="bg-pink-600 px-4 py-2 rounded text-white"
+          >
             Add
           </button>
         </div>
@@ -134,7 +137,8 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
             <span
               key={tag}
               className="px-2 py-1 text-sm bg-pink-500 text-black rounded cursor-pointer"
-              onClick={() => removeTag(tag)}>
+              onClick={() => removeTag(tag)}
+            >
               {tag} ✕
             </span>
           ))}
@@ -145,13 +149,15 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         <button
           type="submit"
           disabled={isPending}
-          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded">
+          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded"
+        >
           {isPending ? "Creating..." : "Create Meme"}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-400 hover:text-white">
+          className="text-gray-400 hover:text-white"
+        >
           Cancel
         </button>
       </div>

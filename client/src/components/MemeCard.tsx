@@ -1,35 +1,57 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type Meme } from "../types/memes";
-import { useState } from "react";
-
-import clsx from "clsx";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
+import clsx from "clsx";
+import { useOptimistic, useState } from "react";
+import { type Meme, type Vote } from "../types/memes";
 
 export const MemeCard = ({ meme }: { meme: Meme }) => {
+  const userId = meme.owner_id; // Replace this with actual logged-in user ID
   const queryClient = useQueryClient();
+
   const [upvotes, setUpvotes] = useState(meme.upvotes);
-  const [downvotes, setDownvotes] = useState(meme.downvotes);
-  const [voted, setVoted] = useState<"up" | "down" | null>(null);
-  const { mutate } = useMutation({
-    mutationFn: async (type: string) => {
-      return axios.post("http://localhost:3000/api/vote", {
-        meme_id: meme.id,
-        user_id: meme.owner_id,
-        type,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["votes"] });
+
+  // ✅ Fetch user votes
+  const { data: userVotes } = useQuery({
+    queryKey: ["user-votes", userId],
+    queryFn: async () => {
+      const res = await axios.get<Vote[]>(
+        `http://localhost:3000/api/vote?user_id=${userId}`
+      );
+      return res.data;
     },
   });
-  const handleVote = (type: "up" | "down") => {
-    if (voted === type) return; // prevent same vote again in this session
-    mutate(type);
 
-    if (type === "up") setUpvotes((prev) => prev + 1);
-    if (type === "down") setDownvotes((prev) => prev + 1);
-    setVoted(type);
+  const alreadyVoted = Array.isArray(userVotes)
+    ? userVotes.some((vote) => vote.meme_id === meme.id)
+    : false;
+  const [optimisticVoted, toggleVote] = useOptimistic(
+    alreadyVoted,
+    (prev: boolean) => !prev
+  );
+
+  // ✅ Vote mutation
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () =>
+      axios.post("http://localhost:3000/api/vote", {
+        meme_id: meme.id,
+        user_id: userId,
+        type: "up",
+      }),
+    onSuccess: (res) => {
+      const updatedVotes = res.data.upvotes;
+      setUpvotes(updatedVotes);
+
+      queryClient.invalidateQueries({ queryKey: ["user-votes", userId] });
+      queryClient.invalidateQueries({ queryKey: ["memes"] });
+    },
+  });
+
+  const handleVote = () => {
+    if (isPending) return;
+    toggleVote(alreadyVoted); // ✅ pass action argument
+    mutate(); // toggle handled on backend
   };
 
   return (
@@ -46,24 +68,29 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
 
       <div className="flex gap-2 items-center mb-3">
         <button
-          onClick={() => handleVote("up")}
-          disabled={voted === "up"}
+          onClick={handleVote}
+          disabled={isPending}
           className={clsx(
-            "text-xs px-2 py-1 rounded bg-pink-600 text-white hover:bg-pink-500",
-            voted === "up" && "opacity-60"
-          )}>
-          🔼 {upvotes}
+            "relative w-8 h-8 flex items-center justify-center bg-transparent hover:scale-110 active:scale-90 transition-transform",
+            isPending && "opacity-50 cursor-not-allowed"
+          )}
+          aria-label="Toggle Like"
+        >
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={optimisticVoted ? "liked" : "unliked"}
+              initial={{ scale: 0.5, rotate: -20, opacity: 0 }}
+              animate={{ scale: 1.3, rotate: 0, opacity: 1 }}
+              exit={{ scale: 0.3, rotate: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 20 }}
+              className="text-2xl"
+            >
+              {optimisticVoted ? "❤️" : "🤍"}
+            </motion.span>
+          </AnimatePresence>
         </button>
 
-        <button
-          onClick={() => handleVote("down")}
-          disabled={voted === "down"}
-          className={clsx(
-            "text-xs px-2 py-1 rounded bg-gray-700 text-white hover:bg-gray-600",
-            voted === "down" && "opacity-60"
-          )}>
-          🔽 {downvotes}
-        </button>
+        <span className="ml-2 text-sm text-white">{upvotes} Likes</span>
       </div>
 
       {meme.ai_caption && (
@@ -83,7 +110,8 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
           {meme.tags.map((tag) => (
             <span
               key={tag}
-              className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full">
+              className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full"
+            >
               #{tag}
             </span>
           ))}

@@ -7,7 +7,7 @@ export const memeSchema = z.object({
   owner_id: z.string().uuid(),
   upvotes: z.number().int().default(0),
   tags: z.string().array(),
-  downvotes: z.number().int().default(0),
+
   ai_caption: z.string(),
   ai_vibe: z.string().nullable().optional(),
   created_at: z.string().datetime().optional(),

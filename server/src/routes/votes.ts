@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { postVote } from "../controllers/votes";
+import { getVotes, postVote } from "../controllers/votes";
 
 export const voteRouter = Router();
 
 voteRouter.route("/vote").post(postVote);
+voteRouter.route("/vote").get(getVotes);

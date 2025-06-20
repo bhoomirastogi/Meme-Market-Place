@@ -41,7 +41,6 @@ function MemeDetail() {
 
         <div className="text-gray-300 mb-2">
           <span>🔥 {meme.upvotes}</span> &nbsp;&nbsp;
-          <span>💔 {meme.downvotes}</span>
         </div>
 
         <p className="mb-2">
@@ -64,7 +63,8 @@ function MemeDetail() {
             {meme.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full">
+                className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full"
+              >
                 #{tag}
               </span>
             ))}
