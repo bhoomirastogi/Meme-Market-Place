@@ -7,6 +7,16 @@ import axios from "axios";
 import { useState } from "react";
 import { FileUpload } from "primereact/fileupload";
 import { supabase } from "./../lib/supabase"; // your Supabase client
+import { env } from "../env";
+
+// Replace with env variable in prod
+const fallbackCaptions = [
+  "To the MOON!",
+  "Brrr goes stonks",
+  "YOLO to the moon!",
+];
+const captionCache: Record<string, string> = {};
+const vibeCache: Record<string, string> = {};
 
 type MemeFormData = z.infer<typeof memeSchema>;
 
@@ -62,9 +72,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     );
   };
 
-  // ✅ Upload image to Supabase
   const uploadImageToSupabase = async (file: File): Promise<string | null> => {
-    if (isPending) return null;
     const ext = file.name.split(".").pop();
     const filename = `${Date.now()}.${ext}`;
     const path = `memes/${filename}`;
@@ -84,8 +92,69 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     return data.publicUrl ?? null;
   };
 
+  const fetchCaptionFromGemini = async (tags: string[]) => {
+    const key = tags.sort().join(",");
+    if (captionCache[key]) return captionCache[key];
+
+    try {
+      const res = await axios.post(env.VITE_GEMINI_URL, {
+        contents: [
+          {
+            parts: [
+              {
+                text: `Write a very short, funny meme caption (max 10 words) for tags: ${tags.join(", ")}. Format it like a punchline.`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const caption =
+        res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
+        fallbackCaptions[Math.floor(Math.random() * fallbackCaptions.length)];
+
+      captionCache[key] = caption;
+      return caption;
+    } catch (err) {
+      console.warn("Gemini caption fallback", err);
+      return fallbackCaptions[
+        Math.floor(Math.random() * fallbackCaptions.length)
+      ];
+    }
+  };
+
+  const fetchVibeFromGemini = async (tags: string[]) => {
+    const key = tags.sort().join(",");
+    if (vibeCache[key]) return vibeCache[key];
+
+    try {
+      const res = await axios.post(env.VITE_GEMINI_URL, {
+        contents: [
+          {
+            parts: [
+              {
+                text: `Based on the tags: ${tags.join(", ")}, generate a 5-7 word punchline that combines all tags into one creative vibe. Return only the phrase without any intro, explanation, hashtags, or formatting. Avoid full sentences.`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const vibe =
+        res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
+        "Cyber Chaos";
+
+      vibeCache[key] = vibe;
+      console.log("Vibe", vibe);
+      return vibe;
+    } catch (err) {
+      console.warn("Gemini vibe fallback", err);
+      return "Cyber Chaos";
+    }
+  };
+
   const onSubmit: SubmitHandler<MemeFormData> = async (data) => {
-    if (isSubmitting) return; // Prevent double submission
+    if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
@@ -101,10 +170,13 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         imageUrl = uploadedUrl;
       }
 
-      const finalData = { ...data, image_url: imageUrl };
+      const ai_caption = await fetchCaptionFromGemini(data.tags);
+      const ai_vibe = await fetchVibeFromGemini(data.tags);
+
+      const finalData = { ...data, image_url: imageUrl, ai_caption, ai_vibe };
       mutate(finalData, {
         onSettled: () => {
-          setIsSubmitting(false); // Reset after success or error
+          setIsSubmitting(false);
         },
       });
     } catch (err) {
@@ -116,8 +188,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4"
-    >
+      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4">
       <h2 className="text-pink-400 font-bold text-2xl mb-2">Create Meme</h2>
 
       <input
@@ -139,8 +210,8 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         uploadHandler={({ files }) => {
           const file = files[0];
           if (file) {
-            setImageFile(file); // Store image in state
-            setPreviewUrl(URL.createObjectURL(file)); // Show preview
+            setImageFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
           }
         }}
       />
@@ -156,10 +227,6 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         </div>
       )}
 
-      {errors.image_url && (
-        <p className="text-red-400 text-sm">{errors.image_url.message}</p>
-      )}
-
       <input
         {...register("owner_id")}
         placeholder="Owner UUID"
@@ -169,24 +236,6 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         <p className="text-red-400 text-sm">{errors.owner_id.message}</p>
       )}
 
-      <input
-        type="text"
-        placeholder="AI Caption"
-        {...register("ai_caption")}
-        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
-      />
-      {errors.ai_caption && (
-        <p className="text-red-400 text-sm">{errors.ai_caption.message}</p>
-      )}
-
-      <input
-        type="text"
-        placeholder="AI Vibe (optional)"
-        {...register("ai_vibe")}
-        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
-      />
-
-      {/* Tag Input */}
       <div>
         <div className="flex gap-2">
           <input
@@ -199,8 +248,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
           <button
             type="button"
             onClick={addTag}
-            className="bg-pink-600 px-4 py-2 rounded text-white"
-          >
+            className="bg-pink-600 px-4 py-2 rounded text-white">
             Add
           </button>
         </div>
@@ -210,8 +258,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
             <span
               key={tag}
               className="px-2 py-1 text-sm bg-pink-500 text-black rounded cursor-pointer"
-              onClick={() => removeTag(tag)}
-            >
+              onClick={() => removeTag(tag)}>
               {tag} ✕
             </span>
           ))}
@@ -222,16 +269,14 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         <button
           type="submit"
           disabled={isPending || isSubmitting}
-          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded"
-        >
+          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded">
           {isPending || isSubmitting ? "Creating..." : "Create Meme"}
         </button>
 
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-400 hover:text-white"
-        >
+          className="text-gray-400 hover:text-white">
           Cancel
         </button>
       </div>
