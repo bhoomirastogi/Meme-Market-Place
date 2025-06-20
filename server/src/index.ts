@@ -10,6 +10,7 @@ import { errorHandlerMiddleware } from "./middleware/errorHandler";
 import { supabase } from "./supabase";
 import { voteRouter } from "./routes/votes";
 import { bidsRouter } from "./routes/bids";
+import { uploadsRouter } from "./routes/uploads";
 
 const app = express();
 const PORT = env.PORT;
@@ -54,6 +55,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/api/v1/", logger, memeRouter);
 app.use("/api/", logger, voteRouter);
 app.use("/api/", logger, bidsRouter);
+app.use("/api/", logger, uploadsRouter);
 app.use(errorHandlerMiddleware);
 
 app.get("/", (req, res) => {

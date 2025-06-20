@@ -5,12 +5,17 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useState } from "react";
+import { FileUpload } from "primereact/fileupload";
+import { supabase } from "./../lib/supabase"; // your Supabase client
 
 type MemeFormData = z.infer<typeof memeSchema>;
 
 export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
   const queryClient = useQueryClient();
   const [tagInput, setTagInput] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
@@ -18,7 +23,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     setValue,
     getValues,
     formState: { errors },
-  } = useForm<z.infer<typeof memeSchema>>({
+  } = useForm<MemeFormData>({
     resolver: zodResolver(memeSchema),
     defaultValues: {
       ai_caption: "",
@@ -57,9 +62,55 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     );
   };
 
-  const onSubmit: SubmitHandler<MemeFormData> = (data) => {
-    console.log(data);
-    mutate(data);
+  // ✅ Upload image to Supabase
+  const uploadImageToSupabase = async (file: File): Promise<string | null> => {
+    if (isPending) return null;
+    const ext = file.name.split(".").pop();
+    const filename = `${Date.now()}.${ext}`;
+    const path = `memes/${filename}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("meme-image")
+      .upload(path, file, {
+        contentType: file.type,
+      });
+
+    if (uploadError) {
+      console.error("Upload Error:", uploadError.message);
+      return null;
+    }
+
+    const { data } = supabase.storage.from("meme-image").getPublicUrl(path);
+    return data.publicUrl ?? null;
+  };
+
+  const onSubmit: SubmitHandler<MemeFormData> = async (data) => {
+    if (isSubmitting) return; // Prevent double submission
+
+    try {
+      setIsSubmitting(true);
+      let imageUrl = data.image_url;
+
+      if (imageFile) {
+        const uploadedUrl = await uploadImageToSupabase(imageFile);
+        if (!uploadedUrl) {
+          alert("Image upload failed!");
+          setIsSubmitting(false);
+          return;
+        }
+        imageUrl = uploadedUrl;
+      }
+
+      const finalData = { ...data, image_url: imageUrl };
+      mutate(finalData, {
+        onSettled: () => {
+          setIsSubmitting(false); // Reset after success or error
+        },
+      });
+    } catch (err) {
+      console.error("Submit error", err);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -78,11 +129,33 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         <p className="text-red-400 text-sm">{errors.title.message}</p>
       )}
 
-      <input
-        {...register("image_url")}
-        placeholder="Image URL"
-        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
+      <FileUpload
+        mode="basic"
+        name="meme-image"
+        accept="image/*"
+        maxFileSize={1000000}
+        auto
+        customUpload
+        uploadHandler={({ files }) => {
+          const file = files[0];
+          if (file) {
+            setImageFile(file); // Store image in state
+            setPreviewUrl(URL.createObjectURL(file)); // Show preview
+          }
+        }}
       />
+
+      {previewUrl && (
+        <div className="mt-2">
+          <p className="text-sm text-pink-400 mb-1">Preview:</p>
+          <img
+            src={previewUrl}
+            alt="Uploaded Preview"
+            className="w-full h-48 object-cover rounded border border-pink-500"
+          />
+        </div>
+      )}
+
       {errors.image_url && (
         <p className="text-red-400 text-sm">{errors.image_url.message}</p>
       )}
@@ -148,11 +221,12 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
       <div className="flex justify-between mt-4">
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || isSubmitting}
           className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded"
         >
-          {isPending ? "Creating..." : "Create Meme"}
+          {isPending || isSubmitting ? "Creating..." : "Create Meme"}
         </button>
+
         <button
           type="button"
           onClick={onClose}
