@@ -11,7 +11,7 @@ export const insertMeme = async ({ meme }: { meme: Meme }) => {
         upvotes: meme.upvotes,
         owner_id: meme.owner_id,
         tags: meme.tags,
-
+        credits: 0,
         ai_caption: meme.ai_caption,
         ai_vibe: meme.ai_vibe,
       })

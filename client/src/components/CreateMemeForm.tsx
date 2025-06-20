@@ -23,7 +23,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     defaultValues: {
       ai_caption: "",
       ai_vibe: "",
-
+      credits: 0,
       owner_id: "",
       title: "",
       upvotes: 0,

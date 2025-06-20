@@ -18,6 +18,22 @@ export const getMemeQuery = async (
   }
 };
 
+export const getBidsById = async (id: string) => {
+  try {
+    const { data } = await supabase
+      .from("memes")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return { status: true, message: data?.credits };
+  } catch (error) {
+    return {
+      status: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
 export const getMemeUpVoteByID = async (id: string) => {
   console.log(id);
   try {
