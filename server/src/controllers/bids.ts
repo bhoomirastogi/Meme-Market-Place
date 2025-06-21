@@ -4,24 +4,33 @@ import { supabase } from "../supabase";
 import { bidSchema } from "../types";
 import { getBidsById } from "../db/getRequest";
 import { updateBids } from "../db/updateRequest";
+import { io } from "../index"; // 👈 Import socket instance
 
+// ✅ GET total bids and broadcast (if needed)
 export const getBid = async (req: Request, res: Response) => {
   const meme_id = req.query.meme_id as string;
   if (!meme_id) throw new BadRequestError("Bad Request");
 
-  const { data, error } = await supabase
+  const { data: allBids, error } = await supabase
     .from("bids")
-    .select("credits")
+    .select("*")
     .eq("meme_id", meme_id);
 
   if (error) throw new BadRequestError(error.message);
 
-  const totalCredits = data.reduce((sum, bid) => sum + bid.credits, 0);
-  const totalBids = data.length;
+  const totalCredits = allBids?.reduce((sum, bid) => sum + bid.credits, 0) || 0;
+  const totalBids = allBids?.length || 0;
+  const highestBid = allBids?.sort((a, b) => b.credits - a.credits)[0];
 
-  res.json({ totalCredits, totalBids });
+  res.json({
+    totalCredits,
+    totalBids,
+    highestBid: highestBid?.credits || 0,
+    highestBidder: highestBid?.user_id || null,
+  });
 };
 
+// ✅ POST bid and broadcast in real-time
 export const postBid = async (req: Request, res: Response) => {
   const result = bidSchema
     .omit({ id: true, created_at: true })
@@ -32,20 +41,21 @@ export const postBid = async (req: Request, res: Response) => {
   }
 
   const bid = result.data;
+
+  // 1. Update the cached bid count (if any)
   const bids = await getBidsById(bid.meme_id);
   if (!bids.status) throw new BadRequestError("Bad Request");
 
-  const { message, status } = await updateBids(
-    bid.meme_id,
-    (bids.message as number) + bid.credits
-  );
-  console.log(status, message);
+  await updateBids(bid.meme_id, (bids.message as number) + bid.credits);
+
+  // 2. Insert new bid
   const { data, error } = await supabase
     .from("bids")
     .insert({
       credits: bid.credits,
       meme_id: bid.meme_id,
       user_id: bid.user_id,
+      created_at: new Date().toISOString(),
     })
     .select();
 
@@ -53,5 +63,23 @@ export const postBid = async (req: Request, res: Response) => {
     throw new BadRequestError(error.message);
   }
 
+  // 3. Re-fetch all bids to emit update
+  const { data: allBids } = await supabase
+    .from("bids")
+    .select("*")
+    .eq("meme_id", bid.meme_id);
+
+  const totalCredits = allBids?.reduce((sum, b) => sum + b.credits, 0) || 0;
+  const highestBid = allBids?.sort((a, b) => b.credits - a.credits)[0];
+
+  // 4. Emit Socket.IO event
+  io.emit("meme:bid", {
+    meme_id: bid.meme_id,
+    totalCredits,
+    highestBid: highestBid?.credits || 0,
+    highestBidder: highestBid?.user_id || null,
+  });
+
+  // 5. Respond with the new bid
   res.status(200).json({ bid: data?.[0] });
 };

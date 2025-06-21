@@ -3,10 +3,28 @@ import { Link } from "@tanstack/react-router";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
-import { useOptimistic, useState } from "react";
+import { useEffect, useOptimistic, useState } from "react";
 import { type Meme, type Vote } from "../types/memes";
+import { io } from "socket.io-client";
 
+export const socket = io("http://localhost:3000");
 export const MemeCard = ({ meme }: { meme: Meme }) => {
+  const [highestBid, setHighestBid] = useState<number | null>(null);
+  const [highestBidder, setHighestBidder] = useState<string | null>(null);
+
+  useEffect(() => {
+    socket.on("meme:bid", (data) => {
+      if (data.meme_id === meme.id) {
+        setHighestBid(data.highestBid);
+        setHighestBidder(data.highestBidder);
+        queryClient.invalidateQueries({ queryKey: ["bids", meme.id, "total"] });
+      }
+    });
+
+    return () => {
+      socket.off("meme:bid");
+    };
+  }, [meme.id]);
   const userId = meme.owner_id; // Replace with actual logged-in user ID
   const queryClient = useQueryClient();
 
@@ -71,6 +89,12 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
   const handleBidSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bidAmount || isNaN(Number(bidAmount))) return;
+
+    socket.emit("bid:meme", {
+      meme_id: meme.id,
+      user_id: userId,
+      credits: parseInt(bidAmount),
+    });
     placeBid();
   };
 
@@ -141,7 +165,11 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
           Place Bid
         </button>
       </form>
-
+      {highestBid && highestBidder && (
+        <div className="text-sm text-cyan-300 mt-1">
+          👑 Highest Bid: <b>{highestBid}</b> by {highestBidder.slice(0, 6)}...
+        </div>
+      )}
       {/* ✅ Total Bids + Credits */}
       {bidStats && (
         <div className="text-sm text-yellow-300 mt-2">

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MemeIndexRouteImport } from './routes/meme/index'
+import { Route as LeaderboardIndexRouteImport } from './routes/leaderboard/index'
 import { Route as MemeMemeIdRouteImport } from './routes/meme/$memeId'
 
 const AboutRoute = AboutRouteImport.update({
@@ -29,6 +30,11 @@ const MemeIndexRoute = MemeIndexRouteImport.update({
   path: '/meme/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeaderboardIndexRoute = LeaderboardIndexRouteImport.update({
+  id: '/leaderboard/',
+  path: '/leaderboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MemeMemeIdRoute = MemeMemeIdRouteImport.update({
   id: '/meme/$memeId',
   path: '/meme/$memeId',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
+  '/leaderboard': typeof LeaderboardIndexRoute
   '/meme': typeof MemeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
+  '/leaderboard': typeof LeaderboardIndexRoute
   '/meme': typeof MemeIndexRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
+  '/leaderboard/': typeof LeaderboardIndexRoute
   '/meme/': typeof MemeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/meme/$memeId' | '/meme'
+  fullPaths: '/' | '/about' | '/meme/$memeId' | '/leaderboard' | '/meme'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/meme/$memeId' | '/meme'
-  id: '__root__' | '/' | '/about' | '/meme/$memeId' | '/meme/'
+  to: '/' | '/about' | '/meme/$memeId' | '/leaderboard' | '/meme'
+  id: '__root__' | '/' | '/about' | '/meme/$memeId' | '/leaderboard/' | '/meme/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   MemeMemeIdRoute: typeof MemeMemeIdRoute
+  LeaderboardIndexRoute: typeof LeaderboardIndexRoute
   MemeIndexRoute: typeof MemeIndexRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leaderboard/': {
+      id: '/leaderboard/'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meme/$memeId': {
       id: '/meme/$memeId'
       path: '/meme/$memeId'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   MemeMemeIdRoute: MemeMemeIdRoute,
+  LeaderboardIndexRoute: LeaderboardIndexRoute,
   MemeIndexRoute: MemeIndexRoute,
 }
 export const routeTree = rootRouteImport

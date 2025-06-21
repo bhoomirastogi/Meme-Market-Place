@@ -56,10 +56,14 @@ export const getMemeUpVoteByID = async (id: string) => {
 
 export const getMemeByID = async (id: string) => {
   try {
-    const meme = await supabase.from("memes").select("*").eq("id", id).single();
+    const meme = await supabase
+      .from("memes")
+      .select("*,owner_id (id,username)")
+      .eq("id", id)
+      .single();
 
     if (!meme) return { status: false, message: "No Meme Found" };
-
+    console.log(meme);
     return { status: true, message: meme.data };
   } catch (error) {
     return {

@@ -11,6 +11,7 @@ import { supabase } from "./supabase";
 import { voteRouter } from "./routes/votes";
 import { bidsRouter } from "./routes/bids";
 import { uploadsRouter } from "./routes/uploads";
+import { leaderboardRouter } from "./routes/leaderboard";
 
 const app = express();
 const PORT = env.PORT;
@@ -56,6 +57,7 @@ app.use("/api/v1/", logger, memeRouter);
 app.use("/api/", logger, voteRouter);
 app.use("/api/", logger, bidsRouter);
 app.use("/api/", logger, uploadsRouter);
+app.use("/api/", logger, leaderboardRouter);
 app.use(errorHandlerMiddleware);
 
 app.get("/", (req, res) => {
