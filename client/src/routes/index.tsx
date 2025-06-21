@@ -20,7 +20,7 @@ function Index() {
   if (error) return <p className="text-red-500">Error loading memes!</p>;
 
   return (
-    <div className="p-6 bg-black min-h-screen container mx-auto text-white font-mono">
+    <div className="p-6  min-h-screen container mx-auto text-white font-mono">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-extrabold neon-glow">
           ⚡ MemeHustle Market

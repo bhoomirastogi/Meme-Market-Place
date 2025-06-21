@@ -23,8 +23,8 @@ export const Route = createRootRoute({
       </header>
 
       {/* Main Content */}
-      <main className="bg-[#0a0a1a] text-white min-h-screen py-6 px-4">
-        <div className="max-w-5xl mx-auto border border-pink-500 rounded-xl p-6 shadow-[0_0_20px_#ff00cc33] bg-[#111112]">
+      <main className="bg-[#0a0a1a] text-white min-h-screen py-6 ">
+        <div className="max-w-full mx-auto border border-pink-500 rounded-xl p-6 shadow-[0_0_20px_#ff00cc33] bg-[#111112]">
           <Outlet />
         </div>
       </main>

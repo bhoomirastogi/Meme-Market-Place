@@ -135,7 +135,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
           <AnimatePresence mode="wait">
             <motion.span
               key={optimisticVoted ? "liked" : "unliked"}
-              initial={{ scale: 0.5, rotate: -20, opacity: 0 }}
+              initial={{ scale: 0, rotate: -20, opacity: 0 }}
               animate={{ scale: 1.3, rotate: 0, opacity: 1 }}
               exit={{ scale: 0.3, rotate: 20, opacity: 0 }}
               transition={{ type: "spring", stiffness: 500, damping: 20 }}

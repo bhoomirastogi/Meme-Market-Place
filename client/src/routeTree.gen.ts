@@ -9,20 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UserIndexRouteImport } from './routes/user/index'
 import { Route as MemeIndexRouteImport } from './routes/meme/index'
 import { Route as LeaderboardIndexRouteImport } from './routes/leaderboard/index'
 import { Route as MemeMemeIdRouteImport } from './routes/meme/$memeId'
 
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UserIndexRoute = UserIndexRouteImport.update({
+  id: '/user/',
+  path: '/user/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MemeIndexRoute = MemeIndexRouteImport.update({
@@ -43,56 +43,56 @@ const MemeMemeIdRoute = MemeMemeIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
   '/leaderboard': typeof LeaderboardIndexRoute
   '/meme': typeof MemeIndexRoute
+  '/user': typeof UserIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
   '/leaderboard': typeof LeaderboardIndexRoute
   '/meme': typeof MemeIndexRoute
+  '/user': typeof UserIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
   '/leaderboard/': typeof LeaderboardIndexRoute
   '/meme/': typeof MemeIndexRoute
+  '/user/': typeof UserIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/meme/$memeId' | '/leaderboard' | '/meme'
+  fullPaths: '/' | '/meme/$memeId' | '/leaderboard' | '/meme' | '/user'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/meme/$memeId' | '/leaderboard' | '/meme'
-  id: '__root__' | '/' | '/about' | '/meme/$memeId' | '/leaderboard/' | '/meme/'
+  to: '/' | '/meme/$memeId' | '/leaderboard' | '/meme' | '/user'
+  id: '__root__' | '/' | '/meme/$memeId' | '/leaderboard/' | '/meme/' | '/user/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
   MemeMemeIdRoute: typeof MemeMemeIdRoute
   LeaderboardIndexRoute: typeof LeaderboardIndexRoute
   MemeIndexRoute: typeof MemeIndexRoute
+  UserIndexRoute: typeof UserIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/user/': {
+      id: '/user/'
+      path: '/user'
+      fullPath: '/user'
+      preLoaderRoute: typeof UserIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meme/': {
@@ -121,10 +121,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
   MemeMemeIdRoute: MemeMemeIdRoute,
   LeaderboardIndexRoute: LeaderboardIndexRoute,
   MemeIndexRoute: MemeIndexRoute,
+  UserIndexRoute: UserIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
