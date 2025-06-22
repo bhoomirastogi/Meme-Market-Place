@@ -25,7 +25,19 @@ export const registerUser = async (req: Request, res: Response) => {
     await supabase.from("users").insert({ id: user_id, username, email });
   }
 
-  res.status(201).json({ message: "User registered, please verify email" });
+  const token = jwt.sign(
+    {
+      user_id,
+      username,
+      email,
+      credits: 0,
+    },
+    env.JWT_SECRET,
+    { expiresIn: "2h" }
+  );
+  res
+    .status(201)
+    .json({ message: "User registered, please verify email", token: token });
 };
 
 export const loginUser = async (req: Request, res: Response) => {

@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import axios from "axios";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { env } from "../env";
+import { useAuth } from "../hooks/useAuth";
 
 export const Route = createFileRoute("/register")({
   component: RouteComponent,
@@ -26,13 +27,15 @@ function RouteComponent() {
   } = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
   });
-
+  const { setToken } = useAuth();
   const [message, setMessage] = useState("");
-
+  const navigate = useNavigate();
   const onSubmit = async (data: RegisterData) => {
     try {
       const res = await axios.post(`${env.SERVER_URL}/auth/register`, data);
-      setMessage(res.data.message || "Registered successfully");
+      setToken(res.data.token);
+      setMessage("Registered successfully");
+      navigate({ to: "/" });
     } catch (err: unknown) {
       if (err instanceof Error) {
         setMessage("Email Already Register"); // show actual error message

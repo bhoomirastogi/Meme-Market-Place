@@ -1,20 +1,19 @@
 import express from "express";
 import { createServer } from "http"; // ✅ you missed this earlier
-import { Server } from "socket.io";
-import { memeRouter } from "./routes/memes";
-import { logger } from "./middleware/logger";
 import { StatusCodes } from "http-status-codes";
+import { Server } from "socket.io";
 import { corsConfig } from "./corsConfig";
 import { env } from "./env/envSchema";
-import { errorHandlerMiddleware } from "./middleware/errorHandler";
-import { supabase } from "./supabase";
-import { voteRouter } from "./routes/votes";
-import { bidsRouter } from "./routes/bids";
-import { uploadsRouter } from "./routes/uploads";
-import { leaderboardRouter } from "./routes/leaderboard";
-import { authRouter } from "./routes/authRoutes";
 import { authenticate } from "./middleware/authMiddleware";
+import { logger } from "./middleware/logger";
+import { authRouter } from "./routes/authRoutes";
+import { bidsRouter } from "./routes/bids";
+import { leaderboardRouter } from "./routes/leaderboard";
+import { memeRouter } from "./routes/memes";
 import { meRouter } from "./routes/meRouter";
+import { uploadsRouter } from "./routes/uploads";
+import { voteRouter } from "./routes/votes";
+import { supabase } from "./supabase";
 
 const app = express();
 const PORT = env.PORT;
