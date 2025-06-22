@@ -1,9 +1,4 @@
-import type {
-  Response,
-  Request,
-  NextFunction,
-  ErrorRequestHandler,
-} from "express";
+import type { NextFunction, Request, Response } from "express";
 
 export const logger = async (
   req: Request,

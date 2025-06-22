@@ -7,6 +7,7 @@ type EnvSchemaType = {
   PORT: string;
   CLIENT_URL: string;
   SERVER_URL: string;
+  JWT_SECRET: string;
 };
 
 export const env: EnvSchemaType = {
@@ -17,4 +18,5 @@ export const env: EnvSchemaType = {
   CLIENT_URL: process.env.CLIENT_URL!,
   PORT: process.env.PORT!,
   SERVER_URL: process.env.SERVER_URL!,
+  JWT_SECRET: process.env.JWT_SECRET!,
 };

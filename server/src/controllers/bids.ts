@@ -72,12 +72,31 @@ export const postBid = async (req: Request, res: Response) => {
   const totalCredits = allBids?.reduce((sum, b) => sum + b.credits, 0) || 0;
   const highestBid = allBids?.sort((a, b) => b.credits - a.credits)[0];
 
-  // 4. Emit Socket.IO event
   io.emit("meme:bid", {
     meme_id: bid.meme_id,
     totalCredits,
     highestBid: highestBid?.credits || 0,
     highestBidder: highestBid?.user_id || null,
+  });
+
+  const { data: userData } = await supabase
+    .from("users")
+    .select("username")
+    .eq("id", bid.user_id)
+    .single();
+
+  const { data: memeData } = await supabase
+    .from("memes")
+    .select("title")
+    .eq("id", bid.meme_id)
+    .single();
+
+  io.emit("leaderboard:user:bid", {
+    user_id: bid.user_id,
+    username: userData?.username || "Anonymous",
+    meme_id: bid.meme_id,
+    meme_title: memeData?.title || "Unknown",
+    credits: bid.credits,
   });
 
   // 5. Respond with the new bid

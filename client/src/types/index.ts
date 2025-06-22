@@ -9,6 +9,7 @@ import {
 } from "./memes";
 import { type MemeTag, type Tag, memeTagSchema, tagSchema } from "./tags";
 import { type User, userSchema } from "./user";
+import { memePostSchema, type memePostSchemaType } from "./memes";
 
 export {
   memeDuelSchema,
@@ -18,6 +19,16 @@ export {
   memeTagSchema,
   tagSchema,
   userSchema,
+  memePostSchema,
 };
 
-export type { MemeDuel, Bid, Meme, Vote, MemeTag, Tag, User };
+export type {
+  MemeDuel,
+  memePostSchemaType,
+  Bid,
+  Meme,
+  Vote,
+  MemeTag,
+  Tag,
+  User,
+};

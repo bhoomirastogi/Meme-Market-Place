@@ -20,7 +20,7 @@ export const getMeme = async (req: Request, res: Response) => {
 export const getMemeID = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status, message } = await getMemeByID(id);
-  console.log(message);
+
   if (!status) {
     throw new BadRequestError(message as string);
   }
@@ -32,7 +32,6 @@ export const postMeme = async (req: Request, res: Response) => {
   const result = memeSchema.safeParse(req.body);
 
   if (!result.success) {
-    console.log("DATA mising");
     throw new BadRequestError("Bad Request");
   }
   const { message, status } = await insertMeme({ meme: result.data });

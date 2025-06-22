@@ -3,6 +3,7 @@ type EnvSchemaType = {
   SUPABASE_KEY: string;
   GEMINI_KEY: string;
   VITE_GEMINI_URL: string;
+  SERVER_URL: string;
 };
 
 export const env: EnvSchemaType = {
@@ -10,4 +11,5 @@ export const env: EnvSchemaType = {
   SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL!,
   GEMINI_KEY: import.meta.env.VITE_GEMINI_KEY!,
   VITE_GEMINI_URL: import.meta.env.VITE_GEMINI_URL!,
+  SERVER_URL: import.meta.env.VITE_SERVER_URL!,
 };

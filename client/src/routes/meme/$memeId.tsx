@@ -1,7 +1,8 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { type memePostSchemaType } from "../../types/memes";
+import {type memePostSchemaType } from "./../../types/index";
+import { env } from "../../env";
 
 export const Route = createFileRoute("/meme/$memeId")({
   component: MemeDetail,
@@ -17,9 +18,7 @@ function MemeDetail() {
   } = useQuery<memePostSchemaType>({
     queryKey: ["meme", memeId],
     queryFn: async () => {
-      const res = await axios.get(
-        `http://localhost:3000/api/v1/meme/${memeId}`
-      );
+      const res = await axios.get(`${env.SERVER_URL}/api/v1/meme/${memeId}`);
       return res.data;
     },
   });
@@ -95,8 +94,7 @@ function MemeDetail() {
               {meme.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs bg-gradient-to-br from-pink-600 to-purple-700 text-white px-3 py-1 rounded-full hover:scale-105 transition-transform duration-200"
-                >
+                  className="text-xs bg-gradient-to-br from-pink-600 to-purple-700 text-white px-3 py-1 rounded-full hover:scale-105 transition-transform duration-200">
                   #{tag}
                 </span>
               ))}

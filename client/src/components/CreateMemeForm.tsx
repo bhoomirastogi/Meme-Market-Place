@@ -5,15 +5,18 @@ import { FileUpload } from "primereact/fileupload";
 import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { env } from "../env";
+import { useAuth } from "../hooks/useAuth";
 import { fetchGeminiResponse } from "../lib/gemini";
-import { memeSchema } from "../types/memes";
+import { memeFormSchema } from "../types/memes";
 import { supabase } from "./../lib/supabase"; // your Supabase client
 
 // Replace with env variable in prod
 
-type MemeFormData = z.infer<typeof memeSchema>;
+type MemeFormData = z.infer<typeof memeFormSchema>;
 
 export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [tagInput, setTagInput] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -27,12 +30,12 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     getValues,
     formState: { errors },
   } = useForm<MemeFormData>({
-    resolver: zodResolver(memeSchema),
+    resolver: zodResolver(memeFormSchema),
     defaultValues: {
       ai_caption: "",
       ai_vibe: "",
       credits: 0,
-      owner_id: "",
+      owner_id: user?.id,
       title: "",
       upvotes: 0,
       tags: [],
@@ -42,7 +45,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: MemeFormData) => {
-      return axios.post("http://localhost:3000/api/v1/meme", data);
+      return axios.post(`${env.SERVER_URL}/api/v1/meme`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["memes"] });
@@ -140,8 +143,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4"
-    >
+      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4">
       <h2 className="text-pink-400 font-bold text-2xl mb-2">Create Meme</h2>
 
       <input
@@ -180,15 +182,6 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         </div>
       )}
 
-      <input
-        {...register("owner_id")}
-        placeholder="Owner UUID"
-        className="w-full px-4 py-2 bg-black border border-pink-500 text-white rounded"
-      />
-      {errors.owner_id && (
-        <p className="text-red-400 text-sm">{errors.owner_id.message}</p>
-      )}
-
       <div>
         <div className="flex gap-2">
           <input
@@ -201,8 +194,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
           <button
             type="button"
             onClick={addTag}
-            className="bg-pink-600 px-4 py-2 rounded text-white"
-          >
+            className="bg-pink-600 px-4 py-2 rounded text-white">
             Add
           </button>
         </div>
@@ -212,8 +204,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
             <span
               key={tag}
               className="px-2 py-1 text-sm bg-pink-500 text-black rounded cursor-pointer"
-              onClick={() => removeTag(tag)}
-            >
+              onClick={() => removeTag(tag)}>
               {tag} ✕
             </span>
           ))}
@@ -224,16 +215,14 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         <button
           type="submit"
           disabled={isPending || isSubmitting}
-          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded"
-        >
+          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded">
           {isPending || isSubmitting ? "Creating..." : "Create Meme"}
         </button>
 
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-400 hover:text-white"
-        >
+          className="text-gray-400 hover:text-white">
           Cancel
         </button>
       </div>

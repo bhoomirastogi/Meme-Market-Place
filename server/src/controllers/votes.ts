@@ -4,6 +4,7 @@ import BadRequestError from "../errors/bad-request";
 import NotFoundError from "../errors/not-found";
 import { supabase } from "../supabase";
 import { voteSchema } from "../types";
+import { io } from "..";
 
 export const postVote = async (req: Request, res: Response) => {
   const result = voteSchema.safeParse(req.body);
@@ -15,7 +16,7 @@ export const postVote = async (req: Request, res: Response) => {
   const { message: memeData, status } = await getMemeUpVoteByID(meme_id);
   if (!status) throw new NotFoundError(memeData as string);
 
-  const meme = memeData as { upvotes: number };
+  const meme = memeData as { upvotes: number; credits: number };
 
   // Step 2: Check if this user already voted for this meme
   const { data: existingVote, error: voteCheckError } = await supabase
@@ -51,11 +52,16 @@ export const postVote = async (req: Request, res: Response) => {
   // Update meme's upvotes
   const { error: updateError } = await supabase
     .from("memes")
-    .update({ upvotes: newVotes })
+    .update({ upvotes: newVotes, credits: meme.credits })
     .eq("id", meme_id);
 
-  if (updateError) throw new BadRequestError(updateError.message);
-
+  if (updateError) {
+    throw new BadRequestError(updateError.message);
+  }
+  io.emit("meme:vote", {
+    meme_id,
+    upvotes: newVotes,
+  });
   res.status(200).json({
     success: true,
     message: existingVote ? "Vote removed" : "Vote added",
@@ -78,6 +84,6 @@ export const getVotes = async (req: Request, res: Response) => {
   if (error) {
     res.status(500).json({ error: error.message });
   }
-  console.log(data);
+
   res.status(200).json(data);
 };

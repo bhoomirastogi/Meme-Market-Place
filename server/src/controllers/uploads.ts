@@ -29,10 +29,9 @@ export const uploadImageToSupabase = async (req: Request, res: Response) => {
     const { data: publicUrlData } = supabase.storage
       .from("meme-image")
       .getPublicUrl(path);
-    console.log(publicUrlData.publicUrl);
+
     res.status(200).json({ url: publicUrlData.publicUrl });
   } catch (err) {
-    console.error("Upload error:", err);
     res.status(500).json({ error: "Upload failed" });
   }
 };

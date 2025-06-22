@@ -9,12 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UserIndexRouteImport } from './routes/user/index'
 import { Route as MemeIndexRouteImport } from './routes/meme/index'
 import { Route as LeaderboardIndexRouteImport } from './routes/leaderboard/index'
 import { Route as MemeMemeIdRouteImport } from './routes/meme/$memeId'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +55,8 @@ const MemeMemeIdRoute = MemeMemeIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
   '/leaderboard': typeof LeaderboardIndexRoute
   '/meme': typeof MemeIndexRoute
@@ -50,6 +64,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
   '/leaderboard': typeof LeaderboardIndexRoute
   '/meme': typeof MemeIndexRoute
@@ -58,6 +74,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/meme/$memeId': typeof MemeMemeIdRoute
   '/leaderboard/': typeof LeaderboardIndexRoute
   '/meme/': typeof MemeIndexRoute
@@ -65,14 +83,38 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/meme/$memeId' | '/leaderboard' | '/meme' | '/user'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/meme/$memeId'
+    | '/leaderboard'
+    | '/meme'
+    | '/user'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/meme/$memeId' | '/leaderboard' | '/meme' | '/user'
-  id: '__root__' | '/' | '/meme/$memeId' | '/leaderboard/' | '/meme/' | '/user/'
+  to:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/meme/$memeId'
+    | '/leaderboard'
+    | '/meme'
+    | '/user'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/register'
+    | '/meme/$memeId'
+    | '/leaderboard/'
+    | '/meme/'
+    | '/user/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
   MemeMemeIdRoute: typeof MemeMemeIdRoute
   LeaderboardIndexRoute: typeof LeaderboardIndexRoute
   MemeIndexRoute: typeof MemeIndexRoute
@@ -81,6 +123,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +177,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
   MemeMemeIdRoute: MemeMemeIdRoute,
   LeaderboardIndexRoute: LeaderboardIndexRoute,
   MemeIndexRoute: MemeIndexRoute,

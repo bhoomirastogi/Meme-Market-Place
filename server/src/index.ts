@@ -12,6 +12,9 @@ import { voteRouter } from "./routes/votes";
 import { bidsRouter } from "./routes/bids";
 import { uploadsRouter } from "./routes/uploads";
 import { leaderboardRouter } from "./routes/leaderboard";
+import { authRouter } from "./routes/authRoutes";
+import { authenticate } from "./middleware/authMiddleware";
+import { meRouter } from "./routes/meRouter";
 
 const app = express();
 const PORT = env.PORT;
@@ -54,18 +57,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use("/api/v1/", logger, memeRouter);
+app.use("/context/", logger, authenticate, meRouter);
 app.use("/api/", logger, voteRouter);
 app.use("/api/", logger, bidsRouter);
 app.use("/api/", logger, uploadsRouter);
+app.use("/auth/", logger, authRouter);
 app.use("/api/", logger, leaderboardRouter);
-app.use(errorHandlerMiddleware);
+// app.use(errorHandlerMiddleware);
 
 app.get("/", (req, res) => {
-  console.log("Heelo");
   res.status(StatusCodes.OK).json({ root: "Helel" });
 });
 
-// ✅ THIS is important: Listen on the `server`, not `app`
 server.listen(PORT, () => {
   console.log(
     `🚀 Server (with Socket.IO) running on ${env.SERVER_URL}:${PORT}`

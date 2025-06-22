@@ -1,18 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import axios from "axios";
-import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useOptimistic, useState } from "react";
+import { env } from "../env";
+import { useAuth } from "../hooks/useAuth";
 import { type Meme, type Vote } from "../types/memes";
-import { io } from "socket.io-client";
+import { socket } from "../lib/utils";
 
-export const socket = io("http://localhost:3000");
 export const MemeCard = ({ meme }: { meme: Meme }) => {
+  const { user } = useAuth();
   const [highestBid, setHighestBid] = useState<number | null>(null);
   const [highestBidder, setHighestBidder] = useState<string | null>(null);
 
+  const queryClient = useQueryClient();
+
   useEffect(() => {
+    socket.on("meme:vote", (data) => {
+      setUpvotes(data.upvotes);
+    });
     socket.on("meme:bid", (data) => {
       if (data.meme_id === meme.id) {
         setHighestBid(data.highestBid);
@@ -23,10 +30,10 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
 
     return () => {
       socket.off("meme:bid");
+      socket.off("meme:vote");
     };
-  }, [meme.id]);
-  const userId = meme.owner_id; // Replace with actual logged-in user ID
-  const queryClient = useQueryClient();
+  }, [meme.id, queryClient]);
+  const userId = user?.id; // Replace with actual logged-in user ID
 
   const [upvotes, setUpvotes] = useState(meme.upvotes);
   const [bidAmount, setBidAmount] = useState("");
@@ -36,7 +43,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
     queryKey: ["user-votes", userId],
     queryFn: async () => {
       const res = await axios.get<Vote[]>(
-        `http://localhost:3000/api/vote?user_id=${userId}`
+        `${env.SERVER_URL}/api/vote?user_id=${user?.id}`
       );
       return res.data;
     },
@@ -54,14 +61,14 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
   // ✅ Vote mutation
   const { mutate, isPending } = useMutation({
     mutationFn: async () =>
-      axios.post("http://localhost:3000/api/vote", {
+      axios.post(`${env.SERVER_URL}/api/vote`, {
         meme_id: meme.id,
-        user_id: userId,
+        user_id: user?.id,
         type: "up",
       }),
     onSuccess: (res) => {
       setUpvotes(res.data.upvotes);
-      queryClient.invalidateQueries({ queryKey: ["user-votes", userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-votes", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["memes"] });
     },
   });
@@ -75,9 +82,9 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
   // ✅ Place bid mutation
   const { mutate: placeBid, isPending: bidPending } = useMutation({
     mutationFn: async () =>
-      axios.post("http://localhost:3000/api/bids", {
+      axios.post(`${env.SERVER_URL}/api/bids`, {
         meme_id: meme.id,
-        user_id: userId,
+        user_id: user?.id,
         credits: parseInt(bidAmount),
       }),
     onSuccess: () => {
@@ -92,7 +99,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
 
     socket.emit("bid:meme", {
       meme_id: meme.id,
-      user_id: userId,
+      user_id: user?.id,
       credits: parseInt(bidAmount),
     });
     placeBid();
@@ -105,11 +112,11 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
       const res = await axios.get<{
         totalCredits: number;
         totalBids: number;
-      }>(`http://localhost:3000/api/bids?meme_id=${meme.id}`);
+      }>(`${env.SERVER_URL}/api/bids?meme_id=${meme.id}`);
       return res.data;
     },
   });
-  console.log("BIds", bidStats);
+
   return (
     <div className="relative bg-gradient-to-br from-pink-500/10 to-indigo-800/5 rounded-xl border border-pink-500 hover:scale-[1.02] transition duration-300 p-4 shadow-lg backdrop-blur-sm group">
       <Link to="/meme/$memeId" params={{ memeId: meme.id! }} className="block">
@@ -130,8 +137,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
             "relative w-8 h-8 flex items-center justify-center bg-transparent hover:scale-110 active:scale-90 transition-transform",
             isPending && "opacity-50 cursor-not-allowed"
           )}
-          aria-label="Toggle Like"
-        >
+          aria-label="Toggle Like">
           <AnimatePresence mode="wait">
             <motion.span
               key={optimisticVoted ? "liked" : "unliked"}
@@ -139,8 +145,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
               animate={{ scale: 1.3, rotate: 0, opacity: 1 }}
               exit={{ scale: 0.3, rotate: 20, opacity: 0 }}
               transition={{ type: "spring", stiffness: 500, damping: 20 }}
-              className="text-2xl"
-            >
+              className="text-2xl">
               {optimisticVoted ? "❤️" : "🤍"}
             </motion.span>
           </AnimatePresence>
@@ -160,8 +165,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
         <button
           type="submit"
           disabled={bidPending}
-          className="px-3 py-1 text-xs rounded bg-pink-600 text-white hover:bg-pink-500"
-        >
+          className="px-3 py-1 text-xs rounded bg-pink-600 text-white hover:bg-pink-500">
           Place Bid
         </button>
       </form>
@@ -199,8 +203,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
           {meme.tags.map((tag) => (
             <span
               key={tag}
-              className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full"
-            >
+              className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full">
               #{tag}
             </span>
           ))}

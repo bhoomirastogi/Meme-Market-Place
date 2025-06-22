@@ -35,7 +35,6 @@ export const getBidsById = async (id: string) => {
 };
 
 export const getMemeUpVoteByID = async (id: string) => {
-  console.log(id);
   try {
     const meme = await supabase
       .from("memes")
@@ -44,7 +43,7 @@ export const getMemeUpVoteByID = async (id: string) => {
       .single();
 
     if (!meme) return { status: false, message: "No Meme Found" };
-    console.log(meme);
+
     return { status: true, message: meme.data! };
   } catch (error) {
     return {
@@ -63,7 +62,7 @@ export const getMemeByID = async (id: string) => {
       .single();
 
     if (!meme) return { status: false, message: "No Meme Found" };
-    console.log(meme);
+
     return { status: true, message: meme.data };
   } catch (error) {
     return {
