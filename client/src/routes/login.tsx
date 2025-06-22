@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { useState } from "react";
 import { env } from "../env";
+import { useAuth } from "../hooks/useAuth";
 
 export const Route = createFileRoute("/login")({
   component: RouteComponent,
@@ -25,6 +26,8 @@ function RouteComponent() {
   } = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
   });
+
+  const { setToken } = useAuth();
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
 
@@ -35,6 +38,7 @@ function RouteComponent() {
 
       localStorage.setItem("token", token); // store JWT
       setMessage("Login successful");
+      setToken(token);
       navigate({ to: "/" });
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {

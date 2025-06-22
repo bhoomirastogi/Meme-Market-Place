@@ -1,6 +1,6 @@
 // src/context/AuthContext.tsx
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { env } from "../env";
 import { AuthContext } from "../lib/utils";
 
@@ -15,6 +15,7 @@ export type User = {
 export type AuthContextType = {
   user: User | null;
   token: string | null;
+  setToken: Dispatch<SetStateAction<string | null>>;
   login: (token: string) => Promise<void>;
   logout: () => void;
 };
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, setToken, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

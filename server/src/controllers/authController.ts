@@ -41,7 +41,7 @@ export const loginUser = async (req: Request, res: Response) => {
   if (error || !data.session) throw new BadRequestError("Invalid credentials");
   const { data: credits, error: error1 } = await supabase
     .from("users")
-    .select("credits")
+    .select("credits,username")
     .eq("email", email)
     .single(); // use `.single()` if you're expecting only one row
 
@@ -50,7 +50,12 @@ export const loginUser = async (req: Request, res: Response) => {
     throw new BadRequestError(error1.message);
   }
   const token = jwt.sign(
-    { user_id: data.user.id, email: data.user.email, credit },
+    {
+      user_id: data.user.id,
+      username: credits.credits,
+      email: data.user.email,
+      credits: credits.credits,
+    },
     env.JWT_SECRET,
     { expiresIn: "2h" }
   );
