@@ -1,90 +1,94 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+
 import axios from "axios";
-import clsx from "clsx";
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useOptimistic, useState } from "react";
 import { env } from "../env";
 import { useAuth } from "../hooks/useAuth";
 import { type Meme, type Vote } from "../types/memes";
 import { socket } from "../lib/utils";
+import { Votes } from "./votes";
+import { Link } from "@tanstack/react-router";
 
 export const MemeCard = ({ meme }: { meme: Meme }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const userId = user?.id;
+
+  const [upvotes, setUpvotes] = useState(meme.upvotes);
+  const [bidAmount, setBidAmount] = useState("");
   const [highestBid, setHighestBid] = useState<number | null>(null);
   const [highestBidder, setHighestBidder] = useState<string | null>(null);
 
-  const queryClient = useQueryClient();
-
   useEffect(() => {
-    socket.on("meme:vote", (data) => {
-      setUpvotes(data.upvotes);
-    });
-    socket.on("meme:bid", (data) => {
+    const voteHandler = (data: { meme_id: string; upvotes: number }) => {
+      if (data.meme_id === meme.id) setUpvotes(data.upvotes);
+    };
+
+    const bidHandler = (data: {
+      meme_id: string;
+      highestBid: number;
+      highestBidder: string;
+    }) => {
       if (data.meme_id === meme.id) {
         setHighestBid(data.highestBid);
         setHighestBidder(data.highestBidder);
         queryClient.invalidateQueries({ queryKey: ["bids", meme.id, "total"] });
       }
-    });
+    };
+
+    socket.on("meme:vote", voteHandler);
+    socket.on("meme:bid", bidHandler);
 
     return () => {
-      socket.off("meme:bid");
-      socket.off("meme:vote");
+      socket.off("meme:vote", voteHandler);
+      socket.off("meme:bid", bidHandler);
     };
   }, [meme.id, queryClient]);
-  const userId = user?.id; // Replace with actual logged-in user ID
 
-  const [upvotes, setUpvotes] = useState(meme.upvotes);
-  const [bidAmount, setBidAmount] = useState("");
-
-  // ✅ Fetch votes by current user
   const { data: userVotes } = useQuery({
     queryKey: ["user-votes", userId],
     queryFn: async () => {
       const res = await axios.get<Vote[]>(
-        `${env.SERVER_URL}/api/vote?user_id=${user?.id}`
+        `${env.SERVER_URL}/api/vote?user_id=${userId}`
       );
       return res.data;
     },
+    enabled: !!userId,
   });
 
-  const alreadyVoted = Array.isArray(userVotes)
-    ? userVotes.some((vote) => vote.meme_id === meme.id)
-    : false;
+  const alreadyVoted =
+    userVotes?.some((vote) => vote.meme_id === meme.id) || false;
 
   const [optimisticVoted, toggleVote] = useOptimistic(
     alreadyVoted,
     (prev: boolean) => !prev
   );
 
-  // ✅ Vote mutation
-  const { mutate, isPending } = useMutation({
+  const { mutate: voteMutate, isPending: isVoting } = useMutation({
     mutationFn: async () =>
       axios.post(`${env.SERVER_URL}/api/vote`, {
         meme_id: meme.id,
-        user_id: user?.id,
+        user_id: userId,
         type: "up",
       }),
     onSuccess: (res) => {
       setUpvotes(res.data.upvotes);
-      queryClient.invalidateQueries({ queryKey: ["user-votes", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["user-votes", userId] });
       queryClient.invalidateQueries({ queryKey: ["memes"] });
     },
   });
 
   const handleVote = () => {
-    if (isPending) return;
+    if (isVoting) return;
     toggleVote(alreadyVoted);
-    mutate();
+    voteMutate();
   };
 
-  // ✅ Place bid mutation
-  const { mutate: placeBid, isPending: bidPending } = useMutation({
+  const { mutate: placeBid, isPending: isPlacingBid } = useMutation({
     mutationFn: async () =>
       axios.post(`${env.SERVER_URL}/api/bids`, {
         meme_id: meme.id,
-        user_id: user?.id,
+        user_id: userId,
         credits: parseInt(bidAmount),
       }),
     onSuccess: () => {
@@ -95,17 +99,17 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
 
   const handleBidSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bidAmount || isNaN(Number(bidAmount))) return;
+    const bid = parseInt(bidAmount);
+    if (!bid || isNaN(bid) || bid <= 0) return;
 
     socket.emit("bid:meme", {
       meme_id: meme.id,
-      user_id: user?.id,
-      credits: parseInt(bidAmount),
+      user_id: userId,
+      credits: bid,
     });
     placeBid();
   };
 
-  // ✅ Fetch total bids and credits
   const { data: bidStats } = useQuery({
     queryKey: ["bids", meme.id, "total"],
     queryFn: async () => {
@@ -119,7 +123,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
 
   return (
     <div className="relative bg-gradient-to-br from-pink-500/10 to-indigo-800/5 rounded-xl border border-pink-500 hover:scale-[1.02] transition duration-300 p-4 shadow-lg backdrop-blur-sm group">
-      <Link to="/meme/$memeId" params={{ memeId: meme.id! }} className="block">
+      <Link to="/meme/$memeId" params={{ memeId: meme.id }} className="block">
         <img
           src={meme.image_url}
           alt={meme.title}
@@ -129,29 +133,13 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
 
       <h2 className="text-xl font-bold text-pink-400 mb-1">{meme.title}</h2>
 
-      <div className="flex gap-2 items-center mb-3">
-        <button
-          onClick={handleVote}
-          disabled={isPending}
-          className={clsx(
-            "relative w-8 h-8 flex items-center justify-center bg-transparent hover:scale-110 active:scale-90 transition-transform",
-            isPending && "opacity-50 cursor-not-allowed"
-          )}
-          aria-label="Toggle Like">
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={optimisticVoted ? "liked" : "unliked"}
-              initial={{ scale: 0, rotate: -20, opacity: 0 }}
-              animate={{ scale: 1.3, rotate: 0, opacity: 1 }}
-              exit={{ scale: 0.3, rotate: 20, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 500, damping: 20 }}
-              className="text-2xl">
-              {optimisticVoted ? "❤️" : "🤍"}
-            </motion.span>
-          </AnimatePresence>
-        </button>
-        <span className="ml-2 text-sm text-white">{upvotes} Likes</span>
-      </div>
+      {/* ✅ Likes Section */}
+      <Votes
+        upvotes={upvotes}
+        handleVote={handleVote}
+        optimisticVoted={optimisticVoted}
+        isPending={isVoting}
+      />
 
       {/* ✅ Bidding Form */}
       <form onSubmit={handleBidSubmit} className="mt-3 flex gap-2">
@@ -164,17 +152,19 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
         />
         <button
           type="submit"
-          disabled={bidPending}
-          className="px-3 py-1 text-xs rounded bg-pink-600 text-white hover:bg-pink-500">
+          disabled={isPlacingBid}
+          className="px-3 py-1 text-xs rounded bg-pink-600 text-white hover:bg-pink-500"
+        >
           Place Bid
         </button>
       </form>
+
       {highestBid && highestBidder && (
         <div className="text-sm text-cyan-300 mt-1">
           👑 Highest Bid: <b>{highestBid}</b> by {highestBidder.slice(0, 6)}...
         </div>
       )}
-      {/* ✅ Total Bids + Credits */}
+
       {bidStats && (
         <div className="text-sm text-yellow-300 mt-2">
           💰 Total Bids:{" "}
@@ -203,14 +193,14 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
           {meme.tags.map((tag) => (
             <span
               key={tag}
-              className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full">
+              className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full"
+            >
               #{tag}
             </span>
           ))}
         </div>
       )}
 
-      {/* ✅ Owner ID */}
       <div className="absolute top-2 right-3 text-xs text-gray-400">
         🧑‍🚀 {meme.owner_id.slice(0, 6)}...
       </div>

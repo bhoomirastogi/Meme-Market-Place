@@ -1,16 +1,7 @@
 import { z } from "zod";
-export const memeFormSchema = z.object({
-  title: z.string(),
-  image_url: z.string().url(),
-  owner_id: z.string().uuid(),
-  upvotes: z.number().int(),
-  tags: z.array(z.string()),
-  credits: z.number().int(),
-  ai_caption: z.string(),
-  ai_vibe: z.string(),
-});
+
 export const memeSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid(),
   title: z.string(),
   image_url: z.string().url().default("https://picsum.photos/200"),
   owner_id: z.string().uuid(),
@@ -58,6 +49,5 @@ export const memePostSchema = z.object({
 
 export type memePostSchemaType = z.infer<typeof memePostSchema>;
 export type Meme = z.infer<typeof memeSchema>;
-export type MemeForm = z.infer<typeof memeFormSchema>;
 export type Vote = z.infer<typeof voteSchema>;
 export type Bid = z.infer<typeof bidSchema>;

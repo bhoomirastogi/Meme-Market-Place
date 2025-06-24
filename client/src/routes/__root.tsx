@@ -25,12 +25,7 @@ function RootComponent() {
               className="text-pink-400 hover:text-white transition duration-300 [&.active]:text-white [&.active]:font-bold">
               🏆 Leaderboard
             </Link>
-            {/* <Link
-              to="/duals"
-              className="text-pink-400 hover:text-white transition duration-300 [&.active]:text-white [&.active]:font-bold"
-            >
-              ⚔️ Meme Duel
-            </Link> */}
+          
           </div>
 
           {/* Auth Section */}

@@ -8,12 +8,12 @@ import { z } from "zod";
 import { env } from "../env";
 import { useAuth } from "../hooks/useAuth";
 import { fetchGeminiResponse } from "../lib/gemini";
-import { memeFormSchema } from "../types/memes";
+import { memePostSchema } from "../types/memes";
 import { supabase } from "./../lib/supabase"; // your Supabase client
 
 // Replace with env variable in prod
 
-type MemeFormData = z.infer<typeof memeFormSchema>;
+type MemeFormData = z.infer<typeof memePostSchema>;
 
 export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
   const { user } = useAuth();
@@ -30,14 +30,13 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
     getValues,
     formState: { errors },
   } = useForm<MemeFormData>({
-    resolver: zodResolver(memeFormSchema),
+    resolver: zodResolver(memePostSchema),
     defaultValues: {
       ai_caption: "",
       ai_vibe: "",
       credits: 0,
-      owner_id: user?.id,
+      owner_id: user ? { id: user.id, username: user.username ?? "" } : null,
       title: "",
-      upvotes: 0,
       tags: [],
       image_url: "https://picsum.photos/200",
     },
@@ -54,7 +53,7 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
   });
 
   const addTag = () => {
-    const currentTags = getValues("tags");
+    const currentTags = getValues("tags") ?? [];
     if (tagInput.trim() && !currentTags.includes(tagInput)) {
       setValue("tags", [...currentTags, tagInput]);
       setTagInput("");
@@ -62,9 +61,10 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
   };
 
   const removeTag = (tag: string) => {
+    const tags = getValues("tags") ?? [];
     setValue(
       "tags",
-      getValues("tags").filter((t) => t !== tag)
+      tags.filter((t: string) => t !== tag)
     );
   };
 
@@ -108,13 +108,13 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
 
       // ✅ Generate AI Caption and Vibe inside the async block
       const ai_caption = await fetchGeminiResponse(
-        data.tags,
+        data.tags ?? [],
         (tags) =>
           `Write a very short, funny meme caption (max 10 words) for tags: ${tags.join(", ")}. Format it like a punchline.`
       );
 
       const ai_vibe = await fetchGeminiResponse(
-        data.tags,
+        data.tags ?? [],
         (tags) =>
           `Based on the tags: ${tags.join(", ")}, generate a 5-7 word punchline that combines all tags into one creative vibe. Return only the phrase without any intro, explanation, hashtags, or formatting. Avoid full sentences.`,
         "Cyber Chaos"
@@ -143,7 +143,8 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4">
+      className="bg-[#111] border border-pink-500 p-6 rounded-xl shadow-xl space-y-4"
+    >
       <h2 className="text-pink-400 font-bold text-2xl mb-2">Create Meme</h2>
 
       <input
@@ -194,17 +195,19 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
           <button
             type="button"
             onClick={addTag}
-            className="bg-pink-600 px-4 py-2 rounded text-white">
+            className="bg-pink-600 px-4 py-2 rounded text-white"
+          >
             Add
           </button>
         </div>
 
         <div className="flex flex-wrap gap-2 mt-2">
-          {getValues("tags").map((tag) => (
+          {(getValues("tags") ?? []).map((tag: string) => (
             <span
               key={tag}
               className="px-2 py-1 text-sm bg-pink-500 text-black rounded cursor-pointer"
-              onClick={() => removeTag(tag)}>
+              onClick={() => removeTag(tag)}
+            >
               {tag} ✕
             </span>
           ))}
@@ -215,14 +218,16 @@ export const CreateMemeForm = ({ onClose }: { onClose: () => void }) => {
         <button
           type="submit"
           disabled={isPending || isSubmitting}
-          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded">
+          className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded"
+        >
           {isPending || isSubmitting ? "Creating..." : "Create Meme"}
         </button>
 
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-400 hover:text-white">
+          className="text-gray-400 hover:text-white"
+        >
           Cancel
         </button>
       </div>

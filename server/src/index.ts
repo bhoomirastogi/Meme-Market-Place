@@ -1,6 +1,5 @@
 import express from "express";
 import { createServer } from "http"; // ✅ you missed this earlier
-import { StatusCodes } from "http-status-codes";
 import { Server } from "socket.io";
 import { corsConfig } from "./corsConfig";
 import { env } from "./env/envSchema";
@@ -63,10 +62,6 @@ app.use("/api/", logger, uploadsRouter);
 app.use("/auth/", logger, authRouter);
 app.use("/api/", logger, leaderboardRouter);
 // app.use(errorHandlerMiddleware);
-
-app.get("/", (req, res) => {
-  res.status(StatusCodes.OK).json({ root: "Helel" });
-});
 
 server.listen(PORT, () => {
   console.log(
