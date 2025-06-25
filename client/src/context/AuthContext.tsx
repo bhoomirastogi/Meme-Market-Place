@@ -9,6 +9,7 @@ export type User = {
   id: string;
   email: string;
   username: string;
+  credits: number;
 };
 
 // Define context type

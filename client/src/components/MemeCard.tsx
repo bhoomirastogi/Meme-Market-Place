@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
 import axios from "axios";
 import { useEffect, useOptimistic, useState } from "react";
 import { env } from "../env";
@@ -8,6 +7,7 @@ import { type Meme, type Vote } from "../types/memes";
 import { socket } from "../lib/utils";
 import { Votes } from "./votes";
 import { Link } from "@tanstack/react-router";
+import { DialogBox } from "./Dialog";
 
 export const MemeCard = ({ meme }: { meme: Meme }) => {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
   const [bidAmount, setBidAmount] = useState("");
   const [highestBid, setHighestBid] = useState<number | null>(null);
   const [highestBidder, setHighestBidder] = useState<string | null>(null);
+  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
 
   useEffect(() => {
     const voteHandler = (data: { meme_id: string; upvotes: number }) => {
@@ -100,6 +101,10 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
   const handleBidSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const bid = parseInt(bidAmount);
+    if (user?.credits! < bid) {
+      setShowInsufficientCredits(true);
+      return;
+    }
     if (!bid || isNaN(bid) || bid <= 0) return;
 
     socket.emit("bid:meme", {
@@ -122,18 +127,17 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
   });
 
   return (
-    <div className="relative bg-gradient-to-br from-pink-500/10 to-indigo-800/5 rounded-xl border border-pink-500 hover:scale-[1.02] transition duration-300 p-4 shadow-lg backdrop-blur-sm group">
-      <Link to="/meme/$memeId" params={{ memeId: meme.id }} className="block">
+    <div className="relative bg-[#13131a] border border-pink-500 rounded-xl shadow-xl p-4 transition hover:scale-[1.02]">
+      <Link to="/meme/$memeId" params={{ memeId: meme.id }}>
         <img
           src={meme.image_url}
           alt={meme.title}
-          className="w-full h-52 object-cover rounded-md border border-pink-500 mb-4 group-hover:shadow-pink-500/30 group-hover:shadow-lg"
+          className="w-full h-56 object-cover rounded-lg border border-pink-400 mb-3"
         />
       </Link>
 
-      <h2 className="text-xl font-bold text-pink-400 mb-1">{meme.title}</h2>
+      <h2 className="text-lg font-semibold text-pink-400 mb-1">{meme.title}</h2>
 
-      {/* ✅ Likes Section */}
       <Votes
         upvotes={upvotes}
         handleVote={handleVote}
@@ -141,59 +145,54 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
         isPending={isVoting}
       />
 
-      {/* ✅ Bidding Form */}
-      <form onSubmit={handleBidSubmit} className="mt-3 flex gap-2">
+      <form onSubmit={handleBidSubmit} className="flex gap-2 mt-3">
         <input
           type="number"
-          placeholder="Your bid"
+          placeholder="Bid credits"
           value={bidAmount}
           onChange={(e) => setBidAmount(e.target.value)}
-          className="w-24 text-sm px-2 py-1 rounded border border-pink-400 bg-transparent text-white placeholder:text-pink-200"
+          className="w-24 px-2 py-1 text-sm rounded bg-[#1e1e2e] border border-pink-500 text-white"
         />
         <button
           type="submit"
           disabled={isPlacingBid}
-          className="px-3 py-1 text-xs rounded bg-pink-600 text-white hover:bg-pink-500"
+          className="bg-pink-600 hover:bg-pink-700 text-white text-sm px-4 py-1 rounded"
         >
-          Place Bid
+          Bid
         </button>
       </form>
 
       {highestBid && highestBidder && (
         <div className="text-sm text-cyan-300 mt-1">
-          👑 Highest Bid: <b>{highestBid}</b> by {highestBidder.slice(0, 6)}...
+          👑 <b>{highestBid}</b> by {highestBidder.slice(0, 6)}...
         </div>
       )}
 
       {bidStats && (
-        <div className="text-sm text-yellow-300 mt-2">
-          💰 Total Bids:{" "}
-          <span className="font-semibold">{bidStats.totalBids}</span> | 🪙 Total
-          Credits:{" "}
-          <span className="font-semibold">{bidStats.totalCredits}</span>
+        <div className="text-sm text-yellow-300 mt-1">
+          🪙 <b>{bidStats.totalBids}</b> bids | 💰{" "}
+          <b>{bidStats.totalCredits}</b> credits
         </div>
       )}
 
-      {/* ✅ AI Caption & Vibe */}
       {meme.ai_caption && (
-        <div className="text-sm text-white mt-2">
+        <p className="mt-2 text-sm text-white">
           <span className="text-pink-400">🤖 Caption:</span> {meme.ai_caption}
-        </div>
+        </p>
       )}
 
       {meme.ai_vibe && (
-        <div className="text-sm text-indigo-300 mt-1">
+        <p className="mt-1 text-sm text-indigo-300">
           <span className="text-indigo-400">🎭 Vibe:</span> {meme.ai_vibe}
-        </div>
+        </p>
       )}
 
-      {/* ✅ Tags */}
       {meme.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {meme.tags.map((tag) => (
             <span
               key={tag}
-              className="text-xs bg-pink-600 text-white px-2 py-1 rounded-full"
+              className="bg-pink-600 text-white text-xs px-2 py-1 rounded-full"
             >
               #{tag}
             </span>
@@ -204,6 +203,15 @@ export const MemeCard = ({ meme }: { meme: Meme }) => {
       <div className="absolute top-2 right-3 text-xs text-gray-400">
         🧑‍🚀 {meme.owner_id.slice(0, 6)}...
       </div>
+
+      <DialogBox
+        open={showInsufficientCredits}
+        onClose={() => setShowInsufficientCredits(false)}
+        title="Insufficient Credits"
+      >
+        You don’t have enough credits to place this bid. Please enter a lower
+        amount or add more credits.
+      </DialogBox>
     </div>
   );
 };
